@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <title>Todo List</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="text-center">Todo List</h1>
+      <div class="d-flex justify-content-center align-items-center">
+        <form action="/addTasks" method="POST">
+          <label for="task" class="m-3">Task</label>
+          <input type="text" name="task" id="task" />
+          <br />
+          <label for="time" class="m-3">Time</label>
+          <input type="time" name="time" id="time" />
+          <button type="submit">Add in the list</button>
+        </form>
+      </div>
+      <br />
+      <div id="task-list"></div>
+      <br />
+      <div id="edit-task"></div>
+    </div>
+
+    <script>
+      const taskContainer = document.getElementById("task-list");
+      const loadTaskLists = () => {
+        taskContainer.innerText = "";
+        fetch("/taskLists")
+          .then((res) => res.json())
+          .then((data) => showTasks(data));
+      };
+      loadTaskLists();
+
+      const showTasks = (data) => {
+        data.forEach((element) => {
+          const cardDiv = document.createElement("div");
+          cardDiv.classList = "card w-50";
+          cardDiv.innerHTML = `
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">${element.task}, ${element.time} <i class="fa fa-pencil-square-o ml-2" aria-hidden="true" onclick="updateTask('${element._id}')"></i><i class="fa fa-trash ml-2" aria-hidden="true" onclick="deleteTask(event,'${element._id}')"></i></li>
+            </ul>`;
+
+          taskContainer.appendChild(cardDiv);
+        });
+      };
+
+      const updateTask = (id) => {
+        loadTask(id);
+      };
+
+      const loadTask = (id) => {
+        fetch(`/taskLists/${id}`)
+          .then((res) => res.json())
+          .then((data) => editTask(data));
+      };
+
+      const editTask = (data) => {
+        const cardDiv = document.createElement("div");
+        cardDiv.classList = "card w-70 h-100";
+        cardDiv.innerHTML = `
+            <h3> Update: ${data._id}</h3>
+            <label for="edit-task-value" class="m-3">Task</label>
+            <input type="text" name="edit-task-value" id="edit-task-value" value="${data.task}"/>
+            <label for="edit-time-value" class="m-3">Time</label>
+            <input type="time" name="edit-time-value" id="edit-time-value" value="${data.time}"/>
+            <br/>
+            <button onclick="handleUpdate('${data._id}')">Update</button>
+            <br/>
+          `;
+        document.getElementById("edit-task").appendChild(cardDiv);
+      };
+
+      const handleUpdate = (id) => {
+        const editTaskValue = document.getElementById("edit-task-value").value;
+        const editTimeValue = document.getElementById("edit-time-value").value;
+        const editTodo = { id, editTaskValue, editTimeValue };
+        fetch(`/updateTask/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editTodo),
+        })
+          .then((res) => res.json())
+          .then((result) => {
+            if (result) {
+              loadTaskLists();
+            }
+          });
+      };
+      const deleteTask = (event, id) => {
+        console.log(event.target.parentNode);
+        fetch(`/deleteTask/${id}`, {
+          method: "DELETE",
+        })
+          .then((res) => res.json())
+          .then((result) => {
+            if (result) {
+              event.target.parentNode.style.display = "none";
+            }
+          });
+      };
+    </script>
+  </body>
+</html>
